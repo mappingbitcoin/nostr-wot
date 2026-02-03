@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import HeroAnimation from "@/components/HeroAnimation";
@@ -29,8 +30,103 @@ import {
 } from "@/components/icons";
 import { CodeBlock } from "@/components/ui";
 
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("home.meta");
+  return {
+    title: t("title"),
+    description: t("description"),
+    openGraph: {
+      title: t("title"),
+      description: t("description"),
+      type: "website",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t("title"),
+      description: t("description"),
+    },
+  };
+}
+
 export default async function Home() {
   const t = await getTranslations("home");
+
+  // JSON-LD structured data for the home page
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Nostr Web of Trust",
+    "alternateName": "Nostr WoT",
+    "url": "https://nostr-wot.com",
+    "logo": "https://nostr-wot.com/icon-512.png",
+    "description": "Open infrastructure for trust-based filtering on Nostr. Empower your apps with reputation scoring and social distance metrics.",
+    "sameAs": [
+      "https://github.com/nostr-wot",
+      "https://twitter.com/nostr_wot",
+    ],
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "Nostr Web of Trust",
+    "url": "https://nostr-wot.com",
+    "description": "Open infrastructure for trust-based filtering on Nostr",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://nostr-wot.com/docs?search={search_term_string}",
+      "query-input": "required name=search_term_string",
+    },
+  };
+
+  const navigationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": [
+      {
+        "@type": "SiteNavigationElement",
+        "position": 1,
+        "name": "Download Extension",
+        "description": "Download the WoT browser extension for Chrome, Brave, Edge, and Opera",
+        "url": "https://nostr-wot.com/download",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 2,
+        "name": "Documentation",
+        "description": "API documentation, integration guides, and SDK reference",
+        "url": "https://nostr-wot.com/docs",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 3,
+        "name": "Features",
+        "description": "Explore Web of Trust features: trust scoring, privacy modes, and universal API",
+        "url": "https://nostr-wot.com/features",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 4,
+        "name": "Oracle Server",
+        "description": "Self-hostable WoT Oracle server for social graph queries",
+        "url": "https://nostr-wot.com/oracle",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 5,
+        "name": "Playground",
+        "description": "Interactive API playground to test Web of Trust queries",
+        "url": "https://nostr-wot.com/playground",
+      },
+      {
+        "@type": "SiteNavigationElement",
+        "position": 6,
+        "name": "About",
+        "description": "Learn about Web of Trust and social distance on Nostr",
+        "url": "https://nostr-wot.com/about",
+      },
+    ],
+  };
 
   const stats = [
     { value: t("stats.license"), label: t("stats.licenseLabel") },
@@ -79,8 +175,21 @@ export default async function Home() {
   ];
 
   return (
-    <main>
-      {/* Hero Section */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(navigationJsonLd) }}
+      />
+      <main>
+        {/* Hero Section */}
       <section className="relative min-h-[90vh] flex items-center justify-center overflow-hidden -mt-16 pt-16">
         <HeroAnimation />
         <div className="relative z-10 max-w-4xl mx-auto px-6 text-center py-20">
@@ -329,6 +438,7 @@ const inNetwork = await wot.isInMyWoT(pubkey);`}
           </ScrollReveal>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }

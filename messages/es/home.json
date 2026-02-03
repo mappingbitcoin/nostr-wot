@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "title": "Nostr Web of Trust - Confianza Sin Autoridad Central",
+    "description": "Infraestructura abierta para filtrado basado en confianza en Nostr. Filtra spam, verifica reputación y descubre contenido a través de tu grafo social."
+  },
   "hero": {
     "badge": "Infraestructura de Código Abierto para Nostr",
     "title": "Confianza Sin",

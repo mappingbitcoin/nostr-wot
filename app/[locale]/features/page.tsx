@@ -99,8 +99,35 @@ const PRIVACY_MODES = [
 export default async function FeaturesPage() {
   const t = await getTranslations("features");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Nostr Web of Trust Features",
+    "description": "Explore WoT features: universal API, trust scoring, privacy modes, customizable settings, and seamless integration with any Nostr app.",
+    "url": "https://nostr-wot.com/features",
+    "mainEntity": {
+      "@type": "SoftwareApplication",
+      "name": "Nostr Web of Trust",
+      "applicationCategory": "DeveloperApplication",
+      "featureList": [
+        "Universal window.nostr.wot API",
+        "Customizable trust scoring",
+        "Remote, Local, and Hybrid modes",
+        "Privacy-first design",
+        "Real-time social distance queries",
+        "Batch operations support",
+      ],
+    },
+  };
+
   return (
-    <main className="overflow-hidden">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main className="overflow-hidden">
       {/* Hero Section */}
       <section className="relative py-24 lg:py-32">
         <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 via-transparent to-transparent" />
@@ -342,13 +369,14 @@ export default async function FeaturesPage() {
               <LinkButton href="/download" size="lg" className="hover-lift shadow-lg shadow-primary/30">
                 Get the Extension
               </LinkButton>
-              <ExternalLinkButton href="https://github.com/AustinKelsworthy/nostr-wot" variant="secondary" size="lg" className="hover-lift">
+              <ExternalLinkButton href="https://github.com/nostr-wot/nostr-wot" variant="secondary" size="lg" className="hover-lift">
                 View on GitHub
               </ExternalLinkButton>
             </div>
           </div>
         </ScrollReveal>
       </Section>
-    </main>
+      </main>
+    </>
   );
 }

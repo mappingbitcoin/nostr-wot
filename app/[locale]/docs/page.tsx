@@ -144,8 +144,37 @@ function ParamTable({ rows, hasDefault, hasRequired }: { rows: TableRow[]; hasDe
 export default async function DocsPage() {
   const t = await getTranslations("docs");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "name": "Nostr Web of Trust Documentation",
+    "description": "Complete API documentation for the Nostr Web of Trust extension, SDK, and Oracle server. Learn how to integrate trust scoring into your Nostr apps.",
+    "url": "https://nostr-wot.com/docs",
+    "author": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+    },
+    "about": {
+      "@type": "SoftwareApplication",
+      "name": "Nostr Web of Trust",
+    },
+    "articleSection": [
+      "Getting Started",
+      "Extension API",
+      "SDK Integration",
+      "Oracle REST API",
+    ],
+  };
+
   return (
-    <main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
       {/* Hero */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -1661,6 +1690,7 @@ function Profile({ pubkey }) {
           </div>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

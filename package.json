@@ -11,18 +11,25 @@
   },
   "dependencies": {
     "@next/third-parties": "^16.1.6",
+    "@noble/hashes": "^2.0.1",
+    "@noble/secp256k1": "^3.0.0",
     "@tailwindcss/postcss": "^4.1.18",
+    "framer-motion": "^12.31.0",
     "next": "^16.1.6",
     "next-intl": "^4.8.2",
+    "nostr-tools": "^2.23.0",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "resend": "^6.9.1"
+    "resend": "^6.9.1",
+    "ws": "^8.19.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^22.10.0",
     "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
+    "@types/ws": "^8.18.1",
     "autoprefixer": "^10.4.24",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.1.6",

@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "title": "WoT Playground",
+    "description": "Teste e explore a API do Nostr Web of Trust em tempo real. Consulte distâncias de confiança, pontuações e conexões do grafo social."
+  },
+  "hero": {
+    "badge": "Interativo",
+    "title": "WoT Playground",
+    "subtitle": "Teste a API de Web of Trust em tempo real. Consulte distâncias, pontuações de confiança e explore seu grafo social.",
+    "loginButton": "Entrar com Nostr",
+    "logout": "Sair"
+  },
+  "login": {
+    "title": "Conectar ao Nostr",
+    "subtitle": "Entre com sua identidade Nostr para acessar o playground e testar a API de Web of Trust.",
+    "chooseMethod": "Entrar com",
+    "or": "ou",
+    "connectButton": "Conectar com Extensão",
+    "connecting": "Conectando...",
+    "noExtensionTitle": "Extensão não encontrada",
+    "noExtensionHelp": "Instale uma extensão signer Nostr como Alby, nos2x, ou Keys.band para continuar.",
+    "nip07Notice": "Usa NIP-07 para acessar sua chave pública com segurança. Sua chave privada nunca sai da sua extensão.",
+    "methods": {
+      "extension": {
+        "title": "Extensão do Navegador",
+        "description": "Alby, nos2x, Keys.band",
+        "help": "Clique abaixo para conectar usando sua extensão signer Nostr instalada."
+      },
+      "key": {
+        "title": "Chave Privada ou Pública",
+        "description": "nsec ou npub",
+        "inputLabel": "Digite sua chave",
+        "inputHelp": "Use nsec para acesso completo ou npub para modo somente leitura",
+        "submitButton": "Entrar com Chave",
+        "securityTitle": "Nota de segurança",
+        "securityNote": "Sua chave privada é armazenada no armazenamento de sessão e removida ao fechar a aba. Para maior segurança, use uma extensão ou bunker."
+      },
+      "bunker": {
+        "title": "Assinador Remoto (Bunker)",
+        "description": "nsec.app, Amber",
+        "scanQR": "Escanear QR",
+        "pasteURL": "Colar URL",
+        "scanHelp": "Escaneie este código QR com seu app Nostr para conectar",
+        "compatibleApps": "Compatível com nsec.app, Amber e outros assinadores NIP-46",
+        "urlLabel": "URL do Bunker",
+        "urlHelp": "Cole sua URL de conexão bunker NIP-46",
+        "submitButton": "Conectar ao Bunker",
+        "waiting": "Aguardando conexão...",
+        "copyUrl": "Copiar URL de conexão",
+        "copied": "Copiado!"
+      }
+    },
+    "createAccount": {
+      "title": "Criar Conta",
+      "description": "Novo no Nostr? Comece com nstart.me"
+    }
+  }
+}

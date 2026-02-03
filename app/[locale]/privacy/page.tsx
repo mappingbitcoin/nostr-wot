@@ -13,8 +13,27 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function PrivacyPage() {
   const t = await getTranslations("privacy");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Privacy Policy - Nostr Web of Trust",
+    "description": "Privacy policy for Nostr Web of Trust website, browser extension, and Oracle server. Learn how we protect your data and respect your privacy.",
+    "url": "https://nostr-wot.com/privacy",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+    },
+  };
+
   return (
-    <main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
       {/* Hero */}
       <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -338,6 +357,7 @@ export default async function PrivacyPage() {
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }

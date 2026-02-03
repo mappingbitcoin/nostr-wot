@@ -37,6 +37,36 @@ const FEATURES = [
 export default async function DownloadPage() {
   const t = await getTranslations("download");
 
+  // JSON-LD structured data for the extension
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Nostr Web of Trust Extension",
+    "applicationCategory": "BrowserApplication",
+    "operatingSystem": "Chrome, Brave, Edge, Opera",
+    "description": "Browser extension that provides Web of Trust API for Nostr apps. Filter spam, verify reputation, and explore your social graph.",
+    "url": "https://nostr-wot.com/download",
+    "downloadUrl": "https://chrome.google.com/webstore/detail/nostr-wot-extension",
+    "softwareVersion": "1.0.0",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+    "featureList": [
+      "Instant trust queries",
+      "Privacy-first design",
+      "Simple window.nostr.wot API",
+      "Local and remote modes",
+    ],
+    "screenshot": "https://nostr-wot.com/og-image.png",
+    "author": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+    },
+  };
+
   const animationPosts = [
     { hop: "1", color: "trust-green", label: t("howItWorks.trusted"), delay: "0s", width: "100%" },
     { hop: "2", color: "trust-yellow", label: `2 ${t("howItWorks.hops")}`, delay: "0.2s", width: "75%" },
@@ -45,7 +75,7 @@ export default async function DownloadPage() {
 
   const buildCommands = [
     `# ${t("buildFromSource.clone")}`,
-    "git clone https://github.com/AustinKelsworthy/nostr-wot-extension.git",
+    "git clone https://github.com/nostr-wot/nostr-wot-extension.git",
     `# ${t("buildFromSource.install")}`,
     "cd nostr-wot-extension && npm install",
     `# ${t("buildFromSource.build")}`,
@@ -53,8 +83,13 @@ export default async function DownloadPage() {
   ];
 
   return (
-    <main>
-      {/* Hero + Downloads */}
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
+        {/* Hero + Downloads */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <ScrollReveal animation="fade-down">
@@ -155,7 +190,7 @@ export default async function DownloadPage() {
                 <TerminalBlock commands={buildCommands} className="mb-4" />
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">{t("buildFromSource.loadInstructions")}</p>
                 <a
-                  href="https://github.com/AustinKelsworthy/nostr-wot-extension"
+                  href="https://github.com/nostr-wot/nostr-wot-extension"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 text-primary font-medium hover:underline text-sm"
@@ -184,6 +219,7 @@ export default async function DownloadPage() {
           </div>
         </ScrollReveal>
       </Section>
-    </main>
+      </main>
+    </>
   );
 }

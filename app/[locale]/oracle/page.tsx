@@ -101,8 +101,43 @@ Content-Type: application/json
 export default async function OraclePage() {
   const t = await getTranslations("oracle");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "WoT Oracle Server",
+    "applicationCategory": "WebApplication",
+    "operatingSystem": "Linux, Docker",
+    "description": "Self-hostable REST API server for Web of Trust social graph queries. Query social distance, find paths, and analyze follow relationships on Nostr.",
+    "url": "https://nostr-wot.com/oracle",
+    "codeRepository": "https://github.com/nostr-wot/wot-oracle",
+    "programmingLanguage": "Rust",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+    "featureList": [
+      "Sub-millisecond cached queries",
+      "Bidirectional BFS pathfinding",
+      "10,000+ queries per second",
+      "Self-hostable with Docker",
+      "REST API with batch support",
+    ],
+    "author": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+    },
+  };
+
   return (
-    <main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
       {/* Hero Section */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -252,6 +287,7 @@ export default async function OraclePage() {
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }

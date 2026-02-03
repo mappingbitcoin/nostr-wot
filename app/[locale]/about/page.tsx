@@ -44,8 +44,27 @@ const ARCHITECTURE_OPTIONS = [
 export default async function AboutPage() {
   const t = await getTranslations("about");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    "name": "About Nostr Web of Trust",
+    "description": "Learn how Web of Trust uses social distance to filter spam and verify reputation on Nostr without central authorities.",
+    "url": "https://nostr-wot.com/about",
+    "mainEntity": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+    },
+  };
+
   return (
-    <main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 py-20">
         <div className="max-w-4xl mx-auto px-6 text-center">
@@ -235,6 +254,7 @@ from=PUBKEY1&to=PUBKEY2"
           </div>
         </ScrollReveal>
       </Section>
-    </main>
+      </main>
+    </>
   );
 }

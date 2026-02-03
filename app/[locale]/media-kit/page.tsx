@@ -60,8 +60,28 @@ function WotLogo({ className }: { className?: string }) {
 export default async function MediaKitPage() {
   const t = await getTranslations("mediaKit");
 
+  // JSON-LD structured data
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Media Kit - Nostr Web of Trust",
+    "description": "Brand assets, logos, and guidelines for Nostr Web of Trust. Download official logos and learn about our brand identity.",
+    "url": "https://nostr-wot.com/media-kit",
+    "publisher": {
+      "@type": "Organization",
+      "name": "Nostr Web of Trust",
+      "url": "https://nostr-wot.com",
+      "logo": "https://nostr-wot.com/icon-512.png",
+    },
+  };
+
   return (
-    <main>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
       {/* Hero */}
       <section className="py-20 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
         <div className="max-w-4xl mx-auto px-6">
@@ -320,6 +340,7 @@ export default async function MediaKitPage() {
           </div>
         </div>
       </section>
-    </main>
+      </main>
+    </>
   );
 }

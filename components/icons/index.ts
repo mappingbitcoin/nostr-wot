@@ -44,6 +44,15 @@ export {
   GitHubIcon,
   NostrIcon,
   XTwitterIcon,
+  KeyIcon,
+  BunkerIcon,
+  QRCodeIcon,
+  LinkIcon,
+  ChevronRightIcon,
+  ChevronLeftIcon,
+  UserAddIcon,
+  ExternalLinkIcon,
+  CloseIcon,
 } from "./UIIcons";
 
 // Illustrations

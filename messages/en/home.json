@@ -1,4 +1,8 @@
 {
+  "meta": {
+    "title": "Nostr Web of Trust - Trust Without Central Authority",
+    "description": "Open infrastructure for trust-based filtering on Nostr. Filter spam, verify reputation, and discover content through your social graph."
+  },
   "hero": {
     "badge": "Open Source Infrastructure for Nostr",
     "title": "Trust Without",

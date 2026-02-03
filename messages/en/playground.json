@@ -1,0 +1,58 @@
+{
+  "meta": {
+    "title": "WoT Playground",
+    "description": "Test and explore the Nostr Web of Trust API in real-time. Query trust distances, scores, and social graph connections."
+  },
+  "hero": {
+    "badge": "Interactive",
+    "title": "WoT Playground",
+    "subtitle": "Test the Web of Trust API in real-time. Query distances, trust scores, and explore your social graph.",
+    "loginButton": "Login with Nostr",
+    "logout": "Logout"
+  },
+  "login": {
+    "title": "Connect to Nostr",
+    "subtitle": "Sign in with your Nostr identity to access the playground and test the Web of Trust API.",
+    "chooseMethod": "Sign in with",
+    "or": "or",
+    "connectButton": "Connect with Extension",
+    "connecting": "Connecting...",
+    "noExtensionTitle": "Extension not found",
+    "noExtensionHelp": "Install a Nostr signer extension like Alby, nos2x, or Keys.band to continue.",
+    "nip07Notice": "Uses NIP-07 to securely access your public key. Your private key never leaves your extension.",
+    "methods": {
+      "extension": {
+        "title": "Browser Extension",
+        "description": "Alby, nos2x, Keys.band",
+        "help": "Click below to connect using your installed Nostr signer extension."
+      },
+      "key": {
+        "title": "Private or Public Key",
+        "description": "nsec or npub",
+        "inputLabel": "Enter your key",
+        "inputHelp": "Use nsec for full access or npub for read-only mode",
+        "submitButton": "Login with Key",
+        "securityTitle": "Security note",
+        "securityNote": "Your private key is stored in session storage and cleared when you close the tab. For better security, use an extension or bunker."
+      },
+      "bunker": {
+        "title": "Remote Signer (Bunker)",
+        "description": "nsec.app, Amber",
+        "scanQR": "Scan QR",
+        "pasteURL": "Paste URL",
+        "scanHelp": "Scan this QR code with your Nostr app to connect",
+        "compatibleApps": "Compatible with nsec.app, Amber, and other NIP-46 signers",
+        "urlLabel": "Bunker URL",
+        "urlHelp": "Paste your NIP-46 bunker connection URL",
+        "submitButton": "Connect to Bunker",
+        "waiting": "Waiting for connection...",
+        "copyUrl": "Copy connection URL",
+        "copied": "Copied!"
+      }
+    },
+    "createAccount": {
+      "title": "Create Account",
+      "description": "New to Nostr? Get started with nstart.me"
+    }
+  }
+}

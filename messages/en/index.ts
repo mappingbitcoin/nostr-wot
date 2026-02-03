@@ -9,6 +9,7 @@ import mediaKit from './mediaKit.json';
 import privacy from './privacy.json';
 import terms from './terms.json';
 import docs from './docs.json';
+import playground from './playground.json';
 
 const messages = {
   common,
@@ -22,6 +23,7 @@ const messages = {
   privacy,
   terms,
   docs,
+  playground,
 };
 
 export default messages;
