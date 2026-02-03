@@ -754,7 +754,7 @@ export function LoginModal({ isOpen, onClose }: LoginModalProps) {
     });
 
     const nstartUrl = `https://nstart.me/?${params.toString()}`;
-    window.open(nstartUrl, "_blank", "width=600,height=700");
+    window.open(nstartUrl, "_blank", "noopener,noreferrer,width=600,height=700");
   }, []);
 
   // Login handlers

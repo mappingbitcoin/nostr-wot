@@ -276,8 +276,17 @@ export function NostrAuthProvider({ children }: { children: ReactNode }) {
             const url = new URL(bunkerUrl);
             const pubkey = url.hostname || url.pathname.replace("//", "");
 
-            if (!pubkey || pubkey.length !== 64) {
-                setError("Invalid bunker URL");
+            // Validate pubkey is exactly 64 hex characters
+            const hexRegex = /^[0-9a-f]{64}$/i;
+            if (!pubkey || !hexRegex.test(pubkey)) {
+                setError("Invalid bunker URL: pubkey must be 64 hex characters");
+                return;
+            }
+
+            // Validate relay parameter exists and is a secure WebSocket URL
+            const relay = url.searchParams.get("relay");
+            if (!relay || !relay.startsWith("wss://")) {
+                setError("Invalid bunker URL: relay must be a secure WebSocket URL (wss://)");
                 return;
             }
 
@@ -297,6 +306,13 @@ export function NostrAuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const loginWithRemoteSigner = useCallback((remotePubkey: string) => {
+        // Validate pubkey format before accepting
+        const hexRegex = /^[0-9a-f]{64}$/i;
+        if (!remotePubkey || !hexRegex.test(remotePubkey)) {
+            setError("Invalid remote signer pubkey");
+            return;
+        }
+
         // This is called when the Nostr Connect QR flow completes
         // The session data is already stored by the connect library
         setUser({
