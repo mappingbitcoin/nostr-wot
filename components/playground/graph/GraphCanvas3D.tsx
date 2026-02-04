@@ -69,6 +69,8 @@ export default function GraphCanvas3D({ width, height }: GraphCanvas3DProps) {
   const handleNodeClick = useCallback(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (node: any) => {
+      if (!node) return;
+
       const graphNode = node as GraphNode;
       select(graphNode);
 
@@ -77,19 +79,23 @@ export default function GraphCanvas3D({ width, height }: GraphCanvas3DProps) {
         expandNodeFollows(graphNode.id);
       }
 
-      // Focus camera on node
-      if (graphRef.current) {
-        const distance = 200;
-        const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
-        graphRef.current.cameraPosition(
-          {
-            x: node.x * distRatio,
-            y: node.y * distRatio,
-            z: node.z * distRatio,
-          },
-          node,
-          2000
-        );
+      // Focus camera on node (with coordinate safety check)
+      if (graphRef.current && typeof node.x === "number" && typeof node.y === "number" && typeof node.z === "number") {
+        try {
+          const distance = 200;
+          const distRatio = 1 + distance / Math.hypot(node.x, node.y, node.z);
+          graphRef.current.cameraPosition(
+            {
+              x: node.x * distRatio,
+              y: node.y * distRatio,
+              z: node.z * distRatio,
+            },
+            node,
+            2000
+          );
+        } catch (err) {
+          console.warn("Camera position error:", err);
+        }
       }
     },
     [select, expandNodeFollows]
@@ -199,7 +205,7 @@ export default function GraphCanvas3D({ width, height }: GraphCanvas3DProps) {
         linkDirectionalArrowRelPos={1}
         backgroundColor="#111827"
         showNavInfo={false}
-        enableNodeDrag={true}
+        enableNodeDrag={false}
         enableNavigationControls={true}
         controlType="orbit"
       />
@@ -221,7 +227,7 @@ export default function GraphCanvas3D({ width, height }: GraphCanvas3DProps) {
 
       {/* Controls hint */}
       <div className="absolute bottom-4 right-4 bg-gray-800/80 backdrop-blur-sm rounded-lg px-3 py-2 text-xs text-gray-400">
-        <div>Drag to rotate • Scroll to zoom • Click node to expand</div>
+        <div>Left-drag to rotate • Right-drag to pan • Scroll to zoom • Click to expand</div>
       </div>
 
       {/* Tooltip */}
@@ -231,8 +237,11 @@ export default function GraphCanvas3D({ width, height }: GraphCanvas3DProps) {
             {activeNode.label || activeNode.id.slice(0, 16)}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            Distance: {activeNode.distance} hop{activeNode.distance !== 1 ? "s" : ""} · Trust:{" "}
-            {Math.round(calculateTrustScore(activeNode.distance, activeNode.pathCount || 1) * 100)}%
+            <span>{activeNode.distance} hop{activeNode.distance !== 1 ? "s" : ""}</span>
+            <span className="mx-1">·</span>
+            <span>{activeNode.pathCount || 1} path{(activeNode.pathCount || 1) !== 1 ? "s" : ""}</span>
+            <span className="mx-1">·</span>
+            <span className="text-trust-green">{Math.round(calculateTrustScore(activeNode.distance, activeNode.pathCount || 1) * 100)}% trust</span>
           </div>
           <div className="text-xs text-gray-500 mt-1 font-mono truncate">
             {activeNode.id.slice(0, 16)}...

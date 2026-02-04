@@ -298,8 +298,11 @@ export default function GraphCanvas({ width, height }: GraphCanvasProps) {
             {activeNode.label || activeNode.id.slice(0, 16)}
           </div>
           <div className="text-xs text-gray-400 mt-1">
-            Distance: {activeNode.distance} hop{activeNode.distance !== 1 ? 's' : ''} ·
-            Trust: {Math.round(calculateTrustScore(activeNode.distance, activeNode.pathCount || 1) * 100)}%
+            <span>{activeNode.distance} hop{activeNode.distance !== 1 ? 's' : ''}</span>
+            <span className="mx-1">·</span>
+            <span>{activeNode.pathCount || 1} path{(activeNode.pathCount || 1) !== 1 ? 's' : ''}</span>
+            <span className="mx-1">·</span>
+            <span className="text-trust-green">{Math.round(calculateTrustScore(activeNode.distance, activeNode.pathCount || 1) * 100)}% trust</span>
           </div>
           <div className="text-xs text-gray-500 mt-1 font-mono truncate">
             {activeNode.id.slice(0, 16)}...

@@ -86,12 +86,25 @@ export default function GraphLegend() {
       </div>
 
       <div className="mt-3 pt-3 border-t border-gray-700">
-        <p className="text-xs font-medium text-gray-400 mb-2">Formula</p>
-        <p className="text-[10px] text-gray-500 leading-relaxed">
-          score = base × distance × (1 + paths)
-        </p>
-        <p className="text-[10px] text-gray-500 mt-1">
-          More paths = higher trust
+        <p className="text-xs font-medium text-gray-400 mb-2">Path Bonus</p>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: getTrustColorHex(calculateTrustScore(2, 1)) }}
+            />
+            <span className="text-[10px] text-gray-400">2 hops, 1 path = {Math.round(calculateTrustScore(2, 1) * 100)}%</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full flex-shrink-0"
+              style={{ backgroundColor: getTrustColorHex(calculateTrustScore(2, 5)) }}
+            />
+            <span className="text-[10px] text-gray-400">2 hops, 5 paths = {Math.round(calculateTrustScore(2, 5) * 100)}%</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-gray-500 mt-2 italic">
+          More paths = stronger trust
         </p>
       </div>
 

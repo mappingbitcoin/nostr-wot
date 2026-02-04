@@ -21,6 +21,7 @@ import {
   DEFAULT_STATS,
 } from "@/lib/graph/types";
 import { filterGraphData, calculateStats } from "@/lib/graph/transformers";
+import { calculateTrustScore } from "@/lib/graph/colors";
 
 // State
 interface GraphState {
@@ -129,22 +130,54 @@ function graphReducer(state: GraphState, action: GraphAction): GraphState {
     }
 
     case "MERGE_DATA": {
-      const existingNodeIds = new Set(state.data.nodes.map((n) => n.id));
-      const newNodes = action.payload.nodes.filter(
-        (n) => !existingNodeIds.has(n.id)
-      );
+      const existingNodeMap = new Map(state.data.nodes.map((n) => [n.id, n]));
       const existingLinkKeys = new Set(
         state.data.links.map((l) => `${l.source}-${l.target}`)
       );
+
+      // Track which nodes get new incoming paths
+      const nodePathIncrements = new Map<string, number>();
+
+      // Filter new links and track path increments for existing nodes
       const newLinks = action.payload.links.filter((l) => {
         const key = `${l.source}-${l.target}`;
-        return !existingLinkKeys.has(key);
+        if (existingLinkKeys.has(key)) {
+          return false;
+        }
+        // If target node exists, increment its path count
+        const targetId = typeof l.target === "string" ? l.target : l.target.id;
+        if (existingNodeMap.has(targetId)) {
+          const current = nodePathIncrements.get(targetId) || 0;
+          nodePathIncrements.set(targetId, current + 1);
+        }
+        return true;
+      });
+
+      // Get new nodes (not already existing)
+      const newNodes = action.payload.nodes.filter(
+        (n) => !existingNodeMap.has(n.id)
+      );
+
+      // Update existing nodes with incremented path counts
+      const updatedNodes = state.data.nodes.map((node) => {
+        const pathIncrement = nodePathIncrements.get(node.id);
+        if (pathIncrement) {
+          const newPathCount = node.pathCount + pathIncrement;
+          // Recalculate trust score with new path count using same formula as colors
+          const newTrustScore = calculateTrustScore(node.distance, newPathCount);
+          return {
+            ...node,
+            pathCount: newPathCount,
+            trustScore: newTrustScore,
+          };
+        }
+        return node;
       });
 
       return {
         ...state,
         data: {
-          nodes: [...state.data.nodes, ...newNodes],
+          nodes: [...updatedNodes, ...newNodes],
           links: [...state.data.links, ...newLinks],
         },
       };
