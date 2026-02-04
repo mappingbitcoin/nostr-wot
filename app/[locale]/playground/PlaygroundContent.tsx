@@ -1,184 +1,148 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { Button, Badge } from "@/components/ui";
-import { useNostrAuth } from "@/contexts/NostrAuthContext";
-import { LoginModal, ConnectModal } from "@/components/auth";
+import { Badge } from "@/components/ui";
 import { GraphPlayground } from "@/components/playground";
+import { useWoTContext, useExtension } from "nostr-wot-sdk/react";
 
 export default function PlaygroundContent() {
   const t = useTranslations("playground");
-  const { user, logout } = useNostrAuth();
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
-  const [hasSeenConnectModal, setHasSeenConnectModal] = useState(false);
-
-  // Show connect modal automatically if user is not logged in
-  useEffect(() => {
-    if (!user?.pubkey && !hasSeenConnectModal) {
-      setIsConnectModalOpen(true);
-    }
-  }, [user?.pubkey, hasSeenConnectModal]);
-
-  const handleOpenModal = useCallback(() => {
-    setIsLoginModalOpen(true);
-  }, []);
-
-  const handleCloseModal = useCallback(() => {
-    setIsLoginModalOpen(false);
-  }, []);
-
-  const handleCloseConnectModal = useCallback(() => {
-    setIsConnectModalOpen(false);
-    setHasSeenConnectModal(true);
-  }, []);
-
-  const handleConnectFromModal = useCallback(() => {
-    setIsConnectModalOpen(false);
-    setHasSeenConnectModal(true);
-    setIsLoginModalOpen(true);
-  }, []);
+  const { wot, isReady } = useWoTContext();
+  const extension = useExtension();
 
   const formatPubkey = (pk: string) => {
     return `${pk.slice(0, 8)}...${pk.slice(-8)}`;
   };
 
-  const getMethodLabel = (method: string) => {
-    switch (method) {
-      case "extension":
-        return "Extension";
-      case "nsec":
-        return "Private Key";
-      case "npub":
-        return "Public Key (Read-only)";
-      case "bunker":
-        return "Bunker";
-      case "remote":
-        return "Remote Signer";
-      default:
-        return method;
-    }
-  };
+  // Show loading while extension initializes
+  if (!extension.isChecked) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Connecting to WoT extension...
+          </p>
+        </div>
+      </main>
+    );
+  }
 
+  // Show message if extension not installed
+  if (!extension.isInstalled) {
+    return (
+      <main className="min-h-screen">
+        <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <Badge className="mb-4">{t("hero.badge")}</Badge>
+            <h1 className="text-4xl font-bold mb-4">{t("hero.title")}</h1>
+            <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
+              {t("hero.subtitle")}
+            </p>
+
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6 max-w-md mx-auto">
+              <div className="flex items-center justify-center mb-4">
+                <svg
+                  className="w-12 h-12 text-yellow-500"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
+                WoT Extension Required
+              </h2>
+              <p className="text-yellow-700 dark:text-yellow-300 mb-4">
+                To use the playground, please install the Web of Trust browser extension.
+              </p>
+              <a
+                href="/download"
+                className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Download Extension
+              </a>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // Show connecting state
+  if (extension.isConnecting) {
+    return (
+      <main className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+          <p className="text-gray-600 dark:text-gray-400">
+            Connecting to extension...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  // Show error if connection failed
+  if (extension.error) {
+    return (
+      <main className="min-h-screen">
+        <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 max-w-md mx-auto">
+              <h2 className="text-lg font-semibold text-red-800 dark:text-red-200 mb-2">
+                Connection Error
+              </h2>
+              <p className="text-red-700 dark:text-red-300 mb-4">
+                {extension.error}
+              </p>
+              <button
+                onClick={() => extension.connect()}
+                className="inline-flex items-center justify-center px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // Get pubkey from WoT instance
+  const userPubkey = wot ? null : null; // Will be populated by useGraphData
+
+  // Show graph when extension is connected
   return (
     <main className="min-h-screen">
-      {/* Show graph when logged in, otherwise show hero */}
-      {user?.pubkey ? (
-        <div className="py-4 px-4 sm:px-6 lg:px-8">
-          {/* Logged in header */}
-          <div className="max-w-7xl mx-auto mb-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Badge>{t("hero.badge")}</Badge>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  {t("hero.title")}
-                </h1>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="w-2 h-2 bg-trust-green rounded-full animate-pulse" />
-                  <span className="font-mono">{formatPubkey(user.pubkey)}</span>
-                  <span className="text-gray-400">
-                    via {getMethodLabel(user.method)}
-                  </span>
-                </div>
-                <Button variant="secondary" size="sm" onClick={logout}>
-                  {t("hero.logout")}
-                </Button>
-              </div>
+      <div className="py-4 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Badge>{t("hero.badge")}</Badge>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                {t("hero.title")}
+              </h1>
             </div>
-          </div>
-
-          {/* Graph visualization */}
-          <div className="max-w-7xl mx-auto">
-            <GraphPlayground />
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="w-2 h-2 bg-trust-green rounded-full animate-pulse" />
+              <span className="text-gray-400">Extension Connected</span>
+            </div>
           </div>
         </div>
-      ) : (
-        <HeroSection
-          user={user}
-          onLogin={handleOpenModal}
-          onLogout={logout}
-          formatPubkey={formatPubkey}
-          getMethodLabel={getMethodLabel}
-          t={t}
-        />
-      )}
 
-      {/* Connect Modal - shown automatically for non-logged in users */}
-      <ConnectModal
-        isOpen={isConnectModalOpen}
-        onClose={handleCloseConnectModal}
-        onConnect={handleConnectFromModal}
-      />
-
-      {/* Login Modal */}
-      <LoginModal isOpen={isLoginModalOpen} onClose={handleCloseModal} />
-    </main>
-  );
-}
-
-// ============================================================================
-// Page Sections
-// ============================================================================
-
-interface User {
-  pubkey: string;
-  method: string;
-  mode: string;
-}
-
-interface SectionProps {
-  t: ReturnType<typeof useTranslations>;
-}
-
-/**
- * Hero section with login status
- */
-function HeroSection({
-  user,
-  onLogin,
-  onLogout,
-  formatPubkey,
-  getMethodLabel,
-  t,
-}: SectionProps & {
-  user: User | null;
-  onLogin: () => void;
-  onLogout: () => void;
-  formatPubkey: (pk: string) => string;
-  getMethodLabel: (method: string) => string;
-}) {
-  return (
-    <section className="py-16 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950">
-      <div className="max-w-4xl mx-auto px-6 text-center">
-        <Badge className="mb-4">{t("hero.badge")}</Badge>
-        <h1 className="text-4xl font-bold mb-4">{t("hero.title")}</h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 mb-8">
-          {t("hero.subtitle")}
-        </p>
-
-        {user?.pubkey ? (
-          <div className="flex flex-col items-center gap-4">
-            <div className="flex items-center gap-3 bg-trust-green/10 text-trust-green px-4 py-2 rounded-full">
-              <div className="w-2 h-2 bg-trust-green rounded-full animate-pulse" />
-              <span className="font-mono text-sm">
-                {formatPubkey(user.pubkey)}
-              </span>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              via {getMethodLabel(user.method)}{" "}
-              {user.mode === "read" && "(read-only)"}
-            </p>
-            <Button variant="secondary" onClick={onLogout}>
-              {t("hero.logout")}
-            </Button>
-          </div>
-        ) : (
-          <Button onClick={onLogin}>{t("hero.loginButton")}</Button>
-        )}
+        {/* Graph visualization */}
+        <div className="max-w-7xl mx-auto">
+          <GraphPlayground />
+        </div>
       </div>
-    </section>
+    </main>
   );
 }

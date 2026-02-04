@@ -6,6 +6,7 @@ import { GoogleAnalytics } from "@next/third-parties/google";
 import { Header, Footer, PageTransition } from "@/components/layout";
 import { ThemeProvider } from "@/components/providers";
 import { NostrAuthProvider } from "@/contexts/NostrAuthContext";
+import { WotProvider } from "@/components/providers/WotProvider";
 import { locales, type Locale } from "@/i18n/config";
 import "../globals.css";
 
@@ -95,11 +96,13 @@ export default async function LocaleLayout({ children, params }: Props) {
         <ThemeProvider>
           <NextIntlClientProvider messages={messages}>
             <NostrAuthProvider>
-              <Header />
-              <div className="pt-16">
-                <PageTransition>{children}</PageTransition>
-              </div>
-              <Footer />
+              <WotProvider>
+                <Header />
+                <div className="pt-16">
+                  <PageTransition>{children}</PageTransition>
+                </div>
+                <Footer />
+              </WotProvider>
             </NostrAuthProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
