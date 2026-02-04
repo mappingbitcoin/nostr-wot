@@ -5,49 +5,65 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { GraphNode, NodeProfile } from "@/lib/graph/types";
 import { useProfileNotes } from "@/hooks/useProfileNotes";
+import { useProfileData } from "@/hooks/useProfileData";
 import ProfileHeader from "./ProfileHeader";
 import ProfileStats from "./ProfileStats";
 import ProfileNotes from "./ProfileNotes";
-import ProfileSkeleton from "./ProfileSkeleton";
 
 interface NodeProfileModalProps {
   isOpen: boolean;
   node: GraphNode | null;
-  profile?: NodeProfile;
+  profile?: NodeProfile; // Fallback from cache
   onClose: () => void;
   onExpand?: () => void;
-  followingCount?: number;
 }
 
 /**
  * Full-screen modal for displaying extended user profile and notes
+ * Fetches all data progressively for fast display
  */
 export default function NodeProfileModal({
   isOpen,
   node,
-  profile,
+  profile: cachedProfile,
   onClose,
   onExpand,
-  followingCount,
 }: NodeProfileModalProps) {
   const t = useTranslations("playground");
+
+  // Profile and following count - fetched progressively
+  const {
+    profile: fetchedProfile,
+    followingCount,
+    isLoadingProfile,
+    isLoadingFollowing,
+    fetchProfile,
+    reset: resetProfile,
+  } = useProfileData();
+
+  // Notes - fetched progressively
   const {
     notes,
     isLoading: isLoadingNotes,
     hasMore,
     fetchNotes,
     loadMore,
-    reset,
+    reset: resetNotes,
   } = useProfileNotes();
 
-  // Fetch notes when modal opens with a node
+  // Use fetched profile, fallback to cached
+  const profile = fetchedProfile || cachedProfile;
+
+  // Fetch all data when modal opens
   useEffect(() => {
     if (isOpen && node) {
+      fetchProfile(node.id);
       fetchNotes(node.id);
     } else {
-      reset();
+      resetProfile();
+      resetNotes();
     }
-  }, [isOpen, node, fetchNotes, reset]);
+  }, [isOpen, node, fetchProfile, fetchNotes, resetProfile, resetNotes]);
 
   // Handle escape key
   useEffect(() => {
@@ -136,6 +152,8 @@ export default function NodeProfileModal({
               node={node}
               profile={profile}
               followingCount={followingCount}
+              isLoadingProfile={isLoadingProfile}
+              isLoadingFollowing={isLoadingFollowing}
             />
 
             {/* About section */}

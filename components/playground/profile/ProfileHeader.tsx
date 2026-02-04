@@ -9,16 +9,21 @@ import { formatPubkey } from "@/lib/graph/transformers";
 interface ProfileHeaderProps {
   node: GraphNode;
   profile?: NodeProfile;
-  followingCount?: number;
+  followingCount?: number | null;
+  isLoadingProfile?: boolean;
+  isLoadingFollowing?: boolean;
 }
 
 /**
  * Profile header with avatar, name, NIP-05, and external links
+ * Shows loading states progressively
  */
 export default function ProfileHeader({
   node,
   profile,
   followingCount,
+  isLoadingProfile,
+  isLoadingFollowing,
 }: ProfileHeaderProps) {
   const t = useTranslations("playground");
   const [copied, setCopied] = useState(false);
@@ -132,13 +137,18 @@ export default function ProfileHeader({
 
       {/* Following count and external links */}
       <div className="flex items-center gap-4 mt-4">
-        {/* Following count */}
-        {followingCount !== undefined && followingCount > 0 && (
+        {/* Following count with loading state */}
+        {isLoadingFollowing ? (
+          <div className="text-sm flex items-center gap-2">
+            <div className="w-8 h-4 bg-gray-700 rounded animate-pulse" />
+            <span className="text-gray-400">{t("graph.following")}</span>
+          </div>
+        ) : followingCount !== undefined && followingCount !== null && followingCount > 0 ? (
           <div className="text-sm">
-            <span className="font-semibold text-white">{followingCount}</span>
+            <span className="font-semibold text-white">{followingCount.toLocaleString()}</span>
             <span className="text-gray-400 ml-1">{t("graph.following")}</span>
           </div>
-        )}
+        ) : null}
 
         {/* Spacer */}
         <div className="flex-1" />

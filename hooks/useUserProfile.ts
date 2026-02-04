@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { NodeProfile, NostrNote } from "@/lib/graph/types";
 
 // Same relays as useGraphData
@@ -11,7 +11,7 @@ const RELAYS = [
   "wss://relay.snort.social",
 ];
 
-const RELAY_TIMEOUT = 10000;
+const RELAY_TIMEOUT = 5000; // Reduced from 10s to 5s
 
 interface UseUserProfileResult {
   profile: NodeProfile | null;
@@ -370,10 +370,11 @@ export function useUserProfile(): UseUserProfileResult {
   );
 
   /**
-   * Fetch all user data
+   * Fetch all user data - streams progressively as data arrives
    */
   const fetchUserData = useCallback(
     async (pubkey: string) => {
+      // Reset state
       setIsLoading(true);
       setError(null);
       setProfile(null);
@@ -384,14 +385,20 @@ export function useUserProfile(): UseUserProfileResult {
       currentPubkeyRef.current = pubkey;
       oldestNoteTimestampRef.current = null;
 
-      try {
-        // Fetch profile, follows, and notes in parallel
-        const [fetchedProfile, fetchedFollows, fetchedNotes] = await Promise.all([
-          fetchProfile(pubkey),
-          fetchFollows(pubkey),
-          fetchNotes(pubkey),
-        ]);
+      // Track completion for loading state
+      let profileDone = false;
+      let followsDone = false;
+      let notesDone = false;
 
+      const checkAllDone = () => {
+        if (profileDone && followsDone && notesDone) {
+          setIsLoading(false);
+        }
+      };
+
+      // Fetch profile - show immediately when received
+      fetchProfile(pubkey).then((fetchedProfile) => {
+        profileDone = true;
         setProfile(
           fetchedProfile || {
             pubkey,
@@ -402,39 +409,182 @@ export function useUserProfile(): UseUserProfileResult {
             nip05: undefined,
           }
         );
+        checkAllDone();
+      });
 
+      // Fetch follows - show immediately and start loading profiles
+      fetchFollows(pubkey).then((fetchedFollows) => {
+        followsDone = true;
         setFollows(fetchedFollows);
+        checkAllDone();
 
-        // Sort notes by timestamp
-        const sortedNotes = fetchedNotes.sort(
-          (a, b) => b.created_at - a.created_at
-        );
-        setNotes(sortedNotes);
-
-        if (sortedNotes.length > 0) {
-          oldestNoteTimestampRef.current =
-            sortedNotes[sortedNotes.length - 1].created_at;
-        }
-        setHasMoreNotes(sortedNotes.length >= 20);
-
-        // Fetch profiles for follows (limit to first 100)
+        // Start streaming follow profiles (don't wait)
         if (fetchedFollows.length > 0) {
-          const followProfilesMap = await fetchProfiles(
-            fetchedFollows.slice(0, 100)
-          );
-          setFollowProfiles(followProfilesMap);
+          streamFollowProfiles(fetchedFollows.slice(0, 100));
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch user data");
-      } finally {
-        setIsLoading(false);
-      }
+      });
+
+      // Fetch notes - stream as they arrive
+      fetchNotesStreaming(pubkey);
+      // Mark notes as done after timeout (streaming continues)
+      setTimeout(() => {
+        notesDone = true;
+        checkAllDone();
+      }, RELAY_TIMEOUT);
     },
-    [fetchProfile, fetchFollows, fetchNotes, fetchProfiles]
+    [fetchProfile, fetchFollows]
   );
 
   /**
-   * Load more notes
+   * Stream notes as they arrive from relays
+   */
+  const fetchNotesStreaming = useCallback((pubkey: string, until?: number) => {
+    const notesBuffer: NostrNote[] = [];
+    const seenIds = new Set<string>();
+    let completedRelays = 0;
+
+    for (const relayUrl of RELAYS) {
+      try {
+        const ws = new WebSocket(relayUrl);
+        const subId = `notes-${Date.now()}-${Math.random()}`;
+
+        ws.onopen = () => {
+          const filter: Record<string, unknown> = {
+            kinds: [1],
+            authors: [pubkey],
+            limit: 20,
+          };
+          if (until) filter.until = until;
+          ws.send(JSON.stringify(["REQ", subId, filter]));
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data[0] === "EVENT" && data[2]?.kind === 1) {
+              const note: NostrNote = {
+                id: data[2].id,
+                pubkey: data[2].pubkey,
+                content: data[2].content,
+                created_at: data[2].created_at,
+                tags: data[2].tags || [],
+                kind: 1,
+                sig: data[2].sig,
+              };
+
+              if (!seenIds.has(note.id)) {
+                seenIds.add(note.id);
+                notesBuffer.push(note);
+
+                // Update UI with sorted notes
+                const sorted = [...notesBuffer].sort(
+                  (a, b) => b.created_at - a.created_at
+                );
+                setNotes(sorted);
+
+                // Update oldest timestamp
+                if (sorted.length > 0) {
+                  oldestNoteTimestampRef.current =
+                    sorted[sorted.length - 1].created_at;
+                }
+              }
+            } else if (data[0] === "EOSE") {
+              ws.close();
+            }
+          } catch {
+            // Ignore
+          }
+        };
+
+        ws.onerror = () => {
+          completedRelays++;
+          if (completedRelays >= RELAYS.length) {
+            setHasMoreNotes(notesBuffer.length >= 20);
+          }
+        };
+
+        ws.onclose = () => {
+          completedRelays++;
+          if (completedRelays >= RELAYS.length) {
+            setHasMoreNotes(notesBuffer.length >= 20);
+          }
+        };
+      } catch {
+        completedRelays++;
+      }
+    }
+  }, []);
+
+  /**
+   * Stream follow profiles progressively
+   */
+  const streamFollowProfiles = useCallback((pubkeys: string[]) => {
+    const profiles = new Map<string, NodeProfile>();
+    let completedRelays = 0;
+
+    // Batch in chunks of 50
+    const chunks: string[][] = [];
+    for (let i = 0; i < pubkeys.length; i += 50) {
+      chunks.push(pubkeys.slice(i, i + 50));
+    }
+
+    for (const relayUrl of RELAYS.slice(0, 2)) {
+      try {
+        const ws = new WebSocket(relayUrl);
+
+        ws.onopen = () => {
+          for (let i = 0; i < chunks.length; i++) {
+            const subId = `profiles-${Date.now()}-${i}`;
+            ws.send(
+              JSON.stringify([
+                "REQ",
+                subId,
+                { kinds: [0], authors: chunks[i], limit: chunks[i].length },
+              ])
+            );
+          }
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data[0] === "EVENT" && data[2]?.kind === 0) {
+              const pubkey = data[2].pubkey;
+              const content = JSON.parse(data[2].content);
+              profiles.set(pubkey, {
+                pubkey,
+                name: content.name,
+                displayName: content.display_name,
+                picture: content.picture,
+                about: content.about,
+                nip05: content.nip05,
+              });
+
+              // Update UI progressively
+              setFollowProfiles(new Map(profiles));
+            }
+          } catch {
+            // Ignore
+          }
+        };
+
+        ws.onerror = () => {
+          completedRelays++;
+        };
+
+        ws.onclose = () => {
+          completedRelays++;
+        };
+
+        setTimeout(() => ws.close(), RELAY_TIMEOUT - 1000);
+      } catch {
+        completedRelays++;
+      }
+    }
+  }, []);
+
+  /**
+   * Load more notes - streams progressively
    */
   const fetchMoreNotes = useCallback(async () => {
     if (
@@ -448,27 +598,85 @@ export function useUserProfile(): UseUserProfileResult {
 
     setIsLoadingNotes(true);
 
-    try {
-      const moreNotes = await fetchNotes(
-        currentPubkeyRef.current,
-        oldestNoteTimestampRef.current - 1
-      );
+    const pubkey = currentPubkeyRef.current;
+    const until = oldestNoteTimestampRef.current - 1;
+    const existingIds = new Set(notes.map((n) => n.id));
+    const newNotesBuffer: NostrNote[] = [];
+    let completedRelays = 0;
 
-      const sortedNotes = moreNotes.sort((a, b) => b.created_at - a.created_at);
-      const existingIds = new Set(notes.map((n) => n.id));
-      const newNotes = sortedNotes.filter((n) => !existingIds.has(n.id));
+    for (const relayUrl of RELAYS) {
+      try {
+        const ws = new WebSocket(relayUrl);
+        const subId = `more-notes-${Date.now()}-${Math.random()}`;
 
-      if (newNotes.length > 0) {
-        setNotes((prev) => [...prev, ...newNotes]);
-        oldestNoteTimestampRef.current = newNotes[newNotes.length - 1].created_at;
+        ws.onopen = () => {
+          ws.send(
+            JSON.stringify([
+              "REQ",
+              subId,
+              { kinds: [1], authors: [pubkey], limit: 20, until },
+            ])
+          );
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data[0] === "EVENT" && data[2]?.kind === 1) {
+              const note: NostrNote = {
+                id: data[2].id,
+                pubkey: data[2].pubkey,
+                content: data[2].content,
+                created_at: data[2].created_at,
+                tags: data[2].tags || [],
+                kind: 1,
+                sig: data[2].sig,
+              };
+
+              if (!existingIds.has(note.id) && !newNotesBuffer.some(n => n.id === note.id)) {
+                existingIds.add(note.id);
+                newNotesBuffer.push(note);
+
+                // Update UI progressively
+                setNotes((prev) => {
+                  const combined = [...prev, ...newNotesBuffer];
+                  return combined.sort((a, b) => b.created_at - a.created_at);
+                });
+
+                // Update oldest timestamp
+                const sorted = [...newNotesBuffer].sort((a, b) => b.created_at - a.created_at);
+                if (sorted.length > 0) {
+                  oldestNoteTimestampRef.current = sorted[sorted.length - 1].created_at;
+                }
+              }
+            } else if (data[0] === "EOSE") {
+              ws.close();
+            }
+          } catch {
+            // Ignore
+          }
+        };
+
+        ws.onerror = () => {
+          completedRelays++;
+          if (completedRelays >= RELAYS.length) {
+            setIsLoadingNotes(false);
+            setHasMoreNotes(newNotesBuffer.length >= 20);
+          }
+        };
+
+        ws.onclose = () => {
+          completedRelays++;
+          if (completedRelays >= RELAYS.length) {
+            setIsLoadingNotes(false);
+            setHasMoreNotes(newNotesBuffer.length >= 20);
+          }
+        };
+      } catch {
+        completedRelays++;
       }
-      setHasMoreNotes(newNotes.length >= 20);
-    } catch {
-      // Ignore errors on load more
-    } finally {
-      setIsLoadingNotes(false);
     }
-  }, [fetchNotes, notes, isLoadingNotes, hasMoreNotes]);
+  }, [notes, isLoadingNotes, hasMoreNotes]);
 
   return {
     profile,

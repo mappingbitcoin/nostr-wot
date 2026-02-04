@@ -12,7 +12,8 @@ const RELAYS = [
 ];
 
 const NOTES_PER_PAGE = 20;
-const RELAY_TIMEOUT = 10000;
+const RELAY_TIMEOUT = 5000; // Reduced from 10s to 5s
+const FIRST_RESULT_TIMEOUT = 2000; // Resolve early if we have results
 
 interface UseProfileNotesResult {
   notes: NostrNote[];
@@ -26,6 +27,7 @@ interface UseProfileNotesResult {
 
 /**
  * Hook to fetch user's posts (kind:1 events) from Nostr relays
+ * Streams results progressively as they arrive
  */
 export function useProfileNotes(): UseProfileNotesResult {
   const [notes, setNotes] = useState<NostrNote[]>([]);
@@ -35,102 +37,138 @@ export function useProfileNotes(): UseProfileNotesResult {
 
   const currentPubkeyRef = useRef<string | null>(null);
   const oldestTimestampRef = useRef<number | null>(null);
+  const activeConnectionsRef = useRef<WebSocket[]>([]);
 
   /**
-   * Fetch notes from relays
+   * Close all active connections
    */
-  const fetchNotesFromRelays = useCallback(
-    async (
+  const closeConnections = useCallback(() => {
+    activeConnectionsRef.current.forEach((ws) => {
+      try {
+        ws.close();
+      } catch {
+        // Ignore
+      }
+    });
+    activeConnectionsRef.current = [];
+  }, []);
+
+  /**
+   * Fetch notes from relays - streams results as they arrive
+   */
+  const fetchNotesStreaming = useCallback(
+    (
       pubkey: string,
-      until?: number
-    ): Promise<NostrNote[]> => {
-      return new Promise((resolve) => {
-        const notesMap = new Map<string, NostrNote>();
-        let resolved = false;
-        let completedRelays = 0;
+      until?: number,
+      onNote: (note: NostrNote) => void = () => {},
+      onComplete: () => void = () => {}
+    ) => {
+      const seenIds = new Set<string>();
+      let completedRelays = 0;
+      let hasReceivedAny = false;
 
-        const timeoutId = setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            resolve(Array.from(notesMap.values()));
-          }
-        }, RELAY_TIMEOUT);
+      // Timeout to mark loading complete
+      const timeoutId = setTimeout(() => {
+        closeConnections();
+        onComplete();
+      }, RELAY_TIMEOUT);
 
-        for (const relayUrl of RELAYS) {
-          try {
-            const ws = new WebSocket(relayUrl);
-            const subId = `notes-${Date.now()}-${Math.random()}`;
+      // Early completion if we have results
+      let earlyTimeoutId: NodeJS.Timeout | null = null;
 
-            ws.onopen = () => {
-              const filter: Record<string, unknown> = {
-                kinds: [1],
-                authors: [pubkey],
-                limit: NOTES_PER_PAGE,
-              };
+      for (const relayUrl of RELAYS) {
+        try {
+          const ws = new WebSocket(relayUrl);
+          activeConnectionsRef.current.push(ws);
+          const subId = `notes-${Date.now()}-${Math.random()}`;
 
-              if (until) {
-                filter.until = until;
-              }
-
-              ws.send(JSON.stringify(["REQ", subId, filter]));
+          ws.onopen = () => {
+            const filter: Record<string, unknown> = {
+              kinds: [1],
+              authors: [pubkey],
+              limit: NOTES_PER_PAGE,
             };
 
-            ws.onmessage = (event) => {
-              try {
-                const data = JSON.parse(event.data);
-                if (data[0] === "EVENT" && data[2]?.kind === 1) {
-                  const note: NostrNote = {
-                    id: data[2].id,
-                    pubkey: data[2].pubkey,
-                    content: data[2].content,
-                    created_at: data[2].created_at,
-                    tags: data[2].tags || [],
-                    kind: 1,
-                    sig: data[2].sig,
-                  };
-                  // Deduplicate by ID
-                  if (!notesMap.has(note.id)) {
-                    notesMap.set(note.id, note);
+            if (until) {
+              filter.until = until;
+            }
+
+            ws.send(JSON.stringify(["REQ", subId, filter]));
+          };
+
+          ws.onmessage = (event) => {
+            try {
+              const data = JSON.parse(event.data);
+              if (data[0] === "EVENT" && data[2]?.kind === 1) {
+                const note: NostrNote = {
+                  id: data[2].id,
+                  pubkey: data[2].pubkey,
+                  content: data[2].content,
+                  created_at: data[2].created_at,
+                  tags: data[2].tags || [],
+                  kind: 1,
+                  sig: data[2].sig,
+                };
+
+                // Deduplicate and stream
+                if (!seenIds.has(note.id)) {
+                  seenIds.add(note.id);
+                  onNote(note);
+
+                  // Start early completion timer on first result
+                  if (!hasReceivedAny) {
+                    hasReceivedAny = true;
+                    earlyTimeoutId = setTimeout(() => {
+                      // If we have enough notes, complete early
+                      if (seenIds.size >= NOTES_PER_PAGE / 2) {
+                        clearTimeout(timeoutId);
+                        closeConnections();
+                        onComplete();
+                      }
+                    }, FIRST_RESULT_TIMEOUT);
                   }
-                } else if (data[0] === "EOSE") {
-                  ws.close();
                 }
-              } catch {
-                // Ignore parse errors
+              } else if (data[0] === "EOSE") {
+                ws.close();
               }
-            };
+            } catch {
+              // Ignore parse errors
+            }
+          };
 
-            ws.onerror = () => {
-              completedRelays++;
-              if (completedRelays >= RELAYS.length && !resolved) {
-                clearTimeout(timeoutId);
-                resolved = true;
-                resolve(Array.from(notesMap.values()));
-              }
-            };
-
-            ws.onclose = () => {
-              completedRelays++;
-              if (completedRelays >= RELAYS.length && !resolved) {
-                clearTimeout(timeoutId);
-                resolved = true;
-                resolve(Array.from(notesMap.values()));
-              }
-            };
-          } catch {
+          ws.onerror = () => {
             completedRelays++;
-          }
+            checkComplete();
+          };
+
+          ws.onclose = () => {
+            completedRelays++;
+            checkComplete();
+          };
+
+          const checkComplete = () => {
+            if (completedRelays >= RELAYS.length) {
+              clearTimeout(timeoutId);
+              if (earlyTimeoutId) clearTimeout(earlyTimeoutId);
+              onComplete();
+            }
+          };
+        } catch {
+          completedRelays++;
         }
-      });
+      }
     },
-    []
+    [closeConnections]
   );
 
   /**
-   * Fetch initial notes for a pubkey
+   * Fetch initial notes for a pubkey - streams progressively
    */
   const fetchNotes = useCallback(
     async (pubkey: string) => {
+      // Close any existing connections
+      closeConnections();
+
       setIsLoading(true);
       setError(null);
       setNotes([]);
@@ -138,31 +176,33 @@ export function useProfileNotes(): UseProfileNotesResult {
       currentPubkeyRef.current = pubkey;
       oldestTimestampRef.current = null;
 
-      try {
-        const fetchedNotes = await fetchNotesFromRelays(pubkey);
+      const notesBuffer: NostrNote[] = [];
 
-        // Sort by created_at descending
-        const sortedNotes = fetchedNotes.sort(
-          (a, b) => b.created_at - a.created_at
-        );
+      fetchNotesStreaming(
+        pubkey,
+        undefined,
+        // onNote - called for each note as it arrives
+        (note) => {
+          notesBuffer.push(note);
+          // Update UI with sorted notes
+          const sorted = [...notesBuffer].sort(
+            (a, b) => b.created_at - a.created_at
+          );
+          setNotes(sorted);
 
-        setNotes(sortedNotes);
-
-        // Track oldest timestamp for pagination
-        if (sortedNotes.length > 0) {
-          oldestTimestampRef.current =
-            sortedNotes[sortedNotes.length - 1].created_at;
+          // Update oldest timestamp
+          if (sorted.length > 0) {
+            oldestTimestampRef.current = sorted[sorted.length - 1].created_at;
+          }
+        },
+        // onComplete - called when all relays finish
+        () => {
+          setIsLoading(false);
+          setHasMore(notesBuffer.length >= NOTES_PER_PAGE);
         }
-
-        // Check if we have more
-        setHasMore(sortedNotes.length >= NOTES_PER_PAGE);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch notes");
-      } finally {
-        setIsLoading(false);
-      }
+      );
     },
-    [fetchNotesFromRelays]
+    [fetchNotesStreaming, closeConnections]
   );
 
   /**
@@ -179,46 +219,54 @@ export function useProfileNotes(): UseProfileNotesResult {
     }
 
     setIsLoading(true);
+    const existingIds = new Set(notes.map((n) => n.id));
+    const newNotesBuffer: NostrNote[] = [];
 
-    try {
-      const fetchedNotes = await fetchNotesFromRelays(
-        currentPubkeyRef.current,
-        oldestTimestampRef.current - 1 // -1 to exclude the last note
-      );
+    fetchNotesStreaming(
+      currentPubkeyRef.current,
+      oldestTimestampRef.current - 1,
+      // onNote
+      (note) => {
+        if (!existingIds.has(note.id)) {
+          newNotesBuffer.push(note);
+          existingIds.add(note.id);
 
-      // Sort and filter duplicates
-      const sortedNotes = fetchedNotes.sort(
-        (a, b) => b.created_at - a.created_at
-      );
+          // Update UI progressively
+          setNotes((prev) => {
+            const combined = [...prev, ...newNotesBuffer];
+            return combined.sort((a, b) => b.created_at - a.created_at);
+          });
 
-      // Filter out notes we already have
-      const existingIds = new Set(notes.map((n) => n.id));
-      const newNotes = sortedNotes.filter((n) => !existingIds.has(n.id));
-
-      if (newNotes.length > 0) {
-        setNotes((prev) => [...prev, ...newNotes]);
-        oldestTimestampRef.current = newNotes[newNotes.length - 1].created_at;
+          // Update oldest timestamp
+          const allSorted = [...notes, ...newNotesBuffer].sort(
+            (a, b) => b.created_at - a.created_at
+          );
+          if (allSorted.length > 0) {
+            oldestTimestampRef.current =
+              allSorted[allSorted.length - 1].created_at;
+          }
+        }
+      },
+      // onComplete
+      () => {
+        setIsLoading(false);
+        setHasMore(newNotesBuffer.length >= NOTES_PER_PAGE);
       }
-
-      setHasMore(newNotes.length >= NOTES_PER_PAGE);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load more notes");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchNotesFromRelays, notes, isLoading, hasMore]);
+    );
+  }, [fetchNotesStreaming, notes, isLoading, hasMore]);
 
   /**
    * Reset state
    */
   const reset = useCallback(() => {
+    closeConnections();
     setNotes([]);
     setIsLoading(false);
     setHasMore(true);
     setError(null);
     currentPubkeyRef.current = null;
     oldestTimestampRef.current = null;
-  }, []);
+  }, [closeConnections]);
 
   return {
     notes,
