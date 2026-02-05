@@ -81,12 +81,10 @@
     }
   },
   "buildFromSource": {
-    "title": "Compilar desde el Código Fuente",
-    "description": "Para máxima seguridad, puedes compilar la extensión tú mismo desde nuestro código abierto. Esto te permite verificar exactamente qué estás instalando.",
+    "title": "Cargar desde el Código Fuente",
+    "description": "¡No se requiere compilación! Puedes cargar la extensión directamente desde el código fuente. Perfecto para desarrolladores que quieren verificar o modificar el código.",
     "clone": "Clonar el repositorio",
-    "install": "Instalar dependencias",
-    "build": "Compilar la extensión",
-    "loadInstructions": "Luego carga la carpeta 'dist' como extensión sin empaquetar en el modo desarrollador de tu navegador.",
+    "loadInstructions": "Luego ve a chrome://extensions, activa 'Modo desarrollador', haz clic en 'Cargar descomprimida' y selecciona la carpeta nostr-wot-extension.",
     "viewOnGitHub": "Ver código en GitHub"
   },
   "cta": {

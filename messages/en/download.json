@@ -81,12 +81,10 @@
     }
   },
   "buildFromSource": {
-    "title": "Build from Source",
-    "description": "For maximum security, you can build the extension yourself from our open-source code. This lets you verify exactly what you're installing.",
+    "title": "Load from Source",
+    "description": "No build required! You can load the extension directly from the source code. Perfect for developers who want to verify or modify the code.",
     "clone": "Clone the repository",
-    "install": "Install dependencies",
-    "build": "Build the extension",
-    "loadInstructions": "Then load the 'dist' folder as an unpacked extension in your browser's developer mode.",
+    "loadInstructions": "Then go to chrome://extensions, enable 'Developer mode', click 'Load unpacked', and select the nostr-wot-extension folder.",
     "viewOnGitHub": "View source on GitHub"
   },
   "cta": {

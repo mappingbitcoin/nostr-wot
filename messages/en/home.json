@@ -148,6 +148,24 @@
       }
     }
   },
+  "playground": {
+    "badge": "Interactive Demo",
+    "title": "Try the Playground",
+    "description": "Explore your Web of Trust graph interactively. See your social connections, trust distances, and how the extension works in real-time.",
+    "tryButton": "Open Playground",
+    "notice": {
+      "title": "Extension Not Yet in Chrome Web Store",
+      "description": "While we wait for Chrome Web Store approval, you can load the extension manually:",
+      "steps": {
+        "step1": "Clone the repository:",
+        "step2": "Go to chrome://extensions in your browser",
+        "step3": "Enable \"Developer mode\" (toggle in top right)",
+        "step4": "Click \"Load unpacked\"",
+        "step5": "Select the nostr-wot-extension folder"
+      },
+      "note": "No build required - the extension loads directly from source."
+    }
+  },
   "cta": {
     "title": "Ready to Build Trust?",
     "description": "Join the growing ecosystem of Nostr apps using Web of Trust. Start filtering spam and building reputation today.",

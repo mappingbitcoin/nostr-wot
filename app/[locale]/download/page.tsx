@@ -76,10 +76,6 @@ export default async function DownloadPage() {
   const buildCommands = [
     `# ${t("buildFromSource.clone")}`,
     "git clone https://github.com/nostr-wot/nostr-wot-extension.git",
-    `# ${t("buildFromSource.install")}`,
-    "cd nostr-wot-extension && npm install",
-    `# ${t("buildFromSource.build")}`,
-    "npm run build",
   ];
 
   return (

@@ -379,8 +379,55 @@ const inNetwork = await wot.isInMyWoT(pubkey);`}
         </div>
       </Section>
 
+      {/* Playground Section */}
+      <Section background="gray" padding="lg" className="overflow-hidden">
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <ScrollReveal animation="fade-right" className="order-2 lg:order-1">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-3xl blur-3xl" />
+              <div className="relative bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-900/40 dark:to-amber-900/40 rounded-3xl p-8 border border-orange-200 dark:border-orange-800">
+                <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="space-y-3 text-sm font-mono">
+                    <p className="text-gray-500 dark:text-gray-400"># {t("playground.notice.steps.step1")}</p>
+                    <p className="text-gray-900 dark:text-white">git clone https://github.com/nostr-wot/nostr-wot-extension.git</p>
+                    <p className="text-gray-500 dark:text-gray-400 mt-4"># {t("playground.notice.steps.step2")}</p>
+                    <p className="text-gray-500 dark:text-gray-400"># {t("playground.notice.steps.step3")}</p>
+                    <p className="text-gray-500 dark:text-gray-400"># {t("playground.notice.steps.step4")}</p>
+                    <p className="text-gray-500 dark:text-gray-400"># {t("playground.notice.steps.step5")}</p>
+                  </div>
+                </div>
+                <p className="text-sm text-orange-700 dark:text-orange-300 mt-4 text-center">{t("playground.notice.note")}</p>
+              </div>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal animation="fade-left" delay={200} className="order-1 lg:order-2">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-3 py-1 rounded-full text-sm font-medium mb-6">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {t("playground.badge")}
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">{t("playground.title")}</h2>
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-6">{t("playground.description")}</p>
+              <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-8">
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">{t("playground.notice.title")}</h3>
+                <p className="text-sm text-amber-700 dark:text-amber-300">{t("playground.notice.description")}</p>
+              </div>
+              <LinkButton href="/playground" className="hover-lift">{t("playground.tryButton")}</LinkButton>
+            </div>
+          </ScrollReveal>
+        </div>
+      </Section>
+
       {/* FAQ Section */}
-      <Section background="gray" padding="lg">
+      <Section padding="lg">
         <ScrollReveal animation="fade-up">
           <SectionHeader title={t("faq.title")} description={t("faq.description")} />
         </ScrollReveal>
